@@ -1,3 +1,5 @@
+from time import sleep
+
 from django.core.urlresolvers import reverse
 from django.template.context import Context, RequestContext
 from django.http import HttpResponseRedirect
@@ -63,6 +65,13 @@ def update_profile_image(request):
 
 @login_required
 def dashboard(request):
+    ffuser = FFUser.objects.get_by_user(request.user)
+    api = ffuser.get_api()
+    while True:
+        status = api.public_timeline()
+        print(status[0].text)
+        sleep(2)
+
     return render_to_response('dashboard.html',
                               RequestContext(request,
                                              locals()))

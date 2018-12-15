@@ -110,4 +110,4 @@ password.py
 *.db
 
 # vim file
-*.swp
+**.swp
