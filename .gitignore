@@ -105,3 +105,9 @@ venv.bak/
 
 # password ;)
 password.py
+
+# database
+*.db
+
+# vim file
+*.swp
