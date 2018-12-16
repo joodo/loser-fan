@@ -1,5 +1,3 @@
-from time import sleep
-
 from django.core.urlresolvers import reverse
 from django.template.context import Context, RequestContext
 from django.http import HttpResponseRedirect
@@ -67,11 +65,92 @@ def update_profile_image(request):
 def dashboard(request):
     ffuser = FFUser.objects.get_by_user(request.user)
     api = ffuser.get_api()
-    while True:
-        status = api.public_timeline()
-        print(status[0].text)
-        sleep(2)
+    start_up(api)
 
     return render_to_response('dashboard.html',
                               RequestContext(request,
                                              locals()))
+
+
+from time import sleep
+import heapq
+import requests
+
+class ProcessedStatus(object):
+    def __init__(self, text):
+        self.text = text
+
+    def __lt__(self, obj):
+        return self.negative_prob > obj.negative_prob
+
+class SentimentClassify(object):
+    def __init__(self):
+        r = requests.post('https://ai.baidu.com/aidemo', data = {})
+        self.cookies = r.cookies
+
+    def run(self, text):
+        r = requests.post('https://ai.baidu.com/aidemo',
+                          cookies = self.cookies,
+                          data = {
+                              'apiType': 'nlp',
+                              't1': text,
+                              'type': 'sentimentClassify',
+                          })
+        # self.cookies = r.cookies
+
+        print(r.json())
+        result = r.json()['data']['items'][0]
+        if result['confidence'] < 0.5:
+            return -1
+        return result['negative_prob']
+
+def start_up(api):
+    """
+    1 hour send message
+    5 minutes refresh timeline
+    15 seconds got a motion score
+    """
+    TICK = 15
+
+    unprocessed_statuses = []
+    processed_statuses = []
+
+    last_public_status_id = None
+    last_home_status_id = None
+
+    #myid = api.get_user().id
+    #a = api.user_timeline(myid)
+    sc = SentimentClassify()
+
+    count = -TICK
+    while True:
+        count += TICK
+
+        if count % 5*60 == 0 and len(unprocessed_statuses) < 1000:
+            statuses = api.public_timeline()
+            for status in statuses:
+                if status.id == last_home_status_id:
+                    break
+                if hasattr(status, 'in_reply_to_status_id') and status.in_reply_to_status_id \
+                        or hasattr(status, 'repost_status_id') and status.repost_status_id:
+                    continue
+                if len(status.text) < 10:
+                    continue
+                unprocessed_statuses.append(status)
+            last_home_status_id = statuses[0].id
+
+        if len(processed_statuses) < 1000 and len(unprocessed_statuses) > 0:
+            status = ProcessedStatus(unprocessed_statuses.pop(0).text)
+            status.negative_prob = sc.run(status.text)
+            heapq.heappush(processed_statuses, status)
+            print(processed_statuses[0].text)
+            print(processed_statuses[0].negative_prob)
+
+        if count % 60*60 and processed_statuses[0].negative_prob > 0.8:
+            # post status
+            pass
+
+        sleep(TICK)
+
+
+
