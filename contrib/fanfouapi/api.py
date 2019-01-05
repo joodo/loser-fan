@@ -345,6 +345,13 @@ class API(object):
                           'target_id', 'target_screen_name']
     )
 
+    """ friendships/requests """
+    requests_friendship = bind_api(
+        path = '/friendships/requests.json',
+        payload_type = 'json',
+        allowed_param = ['count', 'page']
+    )
+
     user_friends = bind_api(
         path = "/users/friends.json",
         payload_type = 'user',
@@ -409,7 +416,7 @@ class API(object):
         if content is None:
             headers, post_data = API._pack_image(filename=filename, max_size=1024, source=self.source)
         else:
-            headers, post_data = API._pack_image_content(filename=filename, content=content, max_size=1024, 
+            headers, post_data = API._pack_image_content(filename=filename, content=content, max_size=1024,
                                                          source=self.source,
                                                          file_type=file_type)
         return bind_api(
@@ -788,7 +795,7 @@ class API(object):
                                     file_type=file_type)
         fp.close()
         return r
-        
+
     @staticmethod
     def _pack_image_content(filename, content, max_size, source=None, status=None, lat=None, long=None, contentname="image", file_type=None):
         # build the mulitpart-formdata body

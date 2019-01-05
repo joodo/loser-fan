@@ -108,8 +108,11 @@ def start_up(api):
     """
     1 hour send message
     5 minutes refresh timeline
-    15 seconds got a motion score
+    15 seconds have a sentiment classify
+    15 seconds fo back friends
     """
+    print(api.enable_notifications().__dict__)
+    raw_input()
     TICK = 15
 
     unprocessed_statuses = []
@@ -125,6 +128,8 @@ def start_up(api):
     count = -TICK
     while True:
         count += TICK
+
+        pass
 
         if count % 5*60 == 0 and len(unprocessed_statuses) < 1000:
             statuses = api.public_timeline()
